@@ -81,34 +81,33 @@ class RagChain:
 
         chain = prompt | self.llm | StrOutputParser()
 
-        with mlflow.start_run(nested=True):
-            mlflow.log_param("query", query)
-            mlflow.log_param("available_categories", list(self.collections.keys()))
+        mlflow.log_param("query", query)
+        mlflow.log_param("available_categories", list(self.collections.keys()))
 
-            try:
-                result = chain.invoke({
-                    "categories": "\n".join(self.collections.keys()),
-                    "query": query
-                })
+        try:
+            result = chain.invoke({
+                "categories": "\n".join(self.collections.keys()),
+                "query": query
+            })
 
-                # Parse the result to get category names
-                relevant_categories = [
-                    category.strip()
-                    for category in result.split("\n")
-                    if category.strip() in self.collections
-                ]
+            # Parse the result to get category names
+            relevant_categories = [
+                category.strip()
+                for category in result.split("\n")
+                if category.strip() in self.collections
+            ]
 
-                mlflow.log_param("selected_categories", relevant_categories)
+            mlflow.log_param("selected_categories", relevant_categories)
 
-                # If no categories match, use all categories
-                if not relevant_categories:
-                    relevant_categories = list(self.collections.keys())
+            # If no categories match, use all categories
+            if not relevant_categories:
+                relevant_categories = list(self.collections.keys())
 
-                return relevant_categories
-            except Exception as e:
-                logger.error(f"Error determining relevant categories: {str(e)}")
-                # Fallback to all categories
-                return list(self.collections.keys())
+            return relevant_categories
+        except Exception as e:
+            logger.error(f"Error determining relevant categories: {str(e)}")
+            # Fallback to all categories
+            return list(self.collections.keys())
 
     def get_multi_collection_retriever(self, categories: List[str], k: int = 3):
         """
@@ -124,31 +123,30 @@ class RagChain:
         def retriever_function(query: str) -> List[Document]:
             all_docs = []
 
-            with mlflow.start_run(nested=True):
-                mlflow.log_param("query", query)
-                mlflow.log_param("search_categories", categories)
+            mlflow.log_param("query", query)
+            mlflow.log_param("search_categories", categories)
 
-                for category in categories:
-                    if category in self.collections:
-                        try:
-                            # Get documents from this collection
-                            collection_docs = self.collections[category].similarity_search(
-                                query=query,
-                                k=k
-                            )
-                            all_docs.extend(collection_docs)
+            for category in categories:
+                if category in self.collections:
+                    try:
+                        # Get documents from this collection
+                        collection_docs = self.collections[category].similarity_search(
+                            query=query,
+                            k=k
+                        )
+                        all_docs.extend(collection_docs)
 
-                            # Log the number of documents retrieved from each category
-                            mlflow.log_metric(f"docs_from_{category}", len(collection_docs))
-                        except Exception as e:
-                            logger.error(f"Error retrieving from {category}: {str(e)}")
+                        # Log the number of documents retrieved from each category
+                        mlflow.log_metric(f"docs_from_{category}", len(collection_docs))
+                    except Exception as e:
+                        logger.error(f"Error retrieving from {category}: {str(e)}")
 
-                # Log total documents retrieved
-                mlflow.log_metric("total_docs_retrieved", len(all_docs))
+            # Log total documents retrieved
+            mlflow.log_metric("total_docs_retrieved", len(all_docs))
 
-                # Sort documents by relevance (using similarity scores if available)
-                # For now, we'll just take the top k*len(categories) documents
-                return all_docs[:k*len(categories)]
+            # Sort documents by relevance (using similarity scores if available)
+            # For now, we'll just take the top k*len(categories) documents
+            return all_docs[:k*len(categories)]
 
         return retriever_function
 
@@ -173,36 +171,36 @@ class RagChain:
         )
 
         def retrieve_and_generate(query: str) -> str:
-            with mlflow.start_run():
-                mlflow.log_param("original_query", query)
+            mlflow.langchain.autolog()
+            # mlflow.log_param("original_query", query)
 
-                # Step 1: Determine relevant categories
-                relevant_categories = self._determine_relevant_categories(query)
+            # Step 1: Determine relevant categories
+            relevant_categories = self._determine_relevant_categories(query)
 
-                # Step 2: Get retriever for these categories
-                retriever = self.get_multi_collection_retriever(relevant_categories)
+            # Step 2: Get retriever for these categories
+            retriever = self.get_multi_collection_retriever(relevant_categories)
 
-                # Step 3: Retrieve documents
-                documents = retriever(query)
+            # Step 3: Retrieve documents
+            documents = retriever(query)
 
-                # Format documents for context
-                context = "\n\n".join([f"Document from {doc.metadata.get('category', 'unknown')} - {doc.metadata.get('filename', 'unknown')}:\n{doc.page_content}" for doc in documents])
+            # Format documents for context
+            context = "\n\n".join([f"Document from {doc.metadata.get('category', 'unknown')} - {doc.metadata.get('filename', 'unknown')}:\n{doc.page_content}" for doc in documents])
 
-                # Step 4: Generate response using the LLM
-                chain = prompt | self.llm | StrOutputParser()
+            # Step 4: Generate response using the LLM
+            chain = prompt | self.llm | StrOutputParser()
 
-                try:
-                    response = chain.invoke({
-                        "context": context,
-                        "question": query
-                    })
+            try:
+                response = chain.invoke({
+                    "context": context,
+                    "question": query
+                })
 
-                    # Log the response
-                    mlflow.log_param("response_length", len(response))
+                # Log the response
+                # mlflow.log_param("response_length", len(response))
 
-                    return response
-                except Exception as e:
-                    logger.error(f"Error generating response: {str(e)}")
-                    return f"I'm sorry, I encountered an error while generating a response: {str(e)}"
+                return response
+            except Exception as e:
+                logger.error(f"Error generating response: {str(e)}")
+                return f"I'm sorry, I encountered an error while generating a response: {str(e)}"
 
         return retrieve_and_generate
