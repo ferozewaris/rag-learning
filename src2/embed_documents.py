@@ -178,6 +178,9 @@ def main():
 
     args = parser.parse_args()
 
+    print("Arguments:")
+    print(args.category, args.clear, args.provider, args.model)
+
     embed_documents(args.category, args.clear, args.provider, args.model)
 
 if __name__ == "__main__":

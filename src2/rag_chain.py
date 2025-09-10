@@ -196,7 +196,7 @@ class RagChain:
                 })
 
                 # Log the response
-                # mlflow.log_param("response_length", len(response))
+                mlflow.log_param("response_length", len(response))
 
                 return response
             except Exception as e:
