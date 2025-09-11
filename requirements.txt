@@ -21,3 +21,8 @@ langchain_openai
 langchain_google_genai
 langchain_huggingface
 langchain-chroma
+duckdb
+pandas
+plotly
+altair
+langchain-experimental
