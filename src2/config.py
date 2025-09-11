@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables from .env file
 load_dotenv()
@@ -41,6 +42,7 @@ EXPERIMENT_NAME = "rag_system_experiment"
 
 # Data location
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+DUCKDB_PATH = Path(os.getenv("DUCKDB_PATH"))
 
 # FastAPI configuration
 API_HOST = os.getenv("API_HOST", "localhost")
