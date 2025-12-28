@@ -1,5 +1,6 @@
 import os
 from dotenv import load_dotenv
+from pathlib import Path
 
 # Load environment variables from .env file
 load_dotenv()
@@ -14,7 +15,7 @@ OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-s
 
 # Google Gemini configuration
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-GOOGLE_EMBEDDING_MODEL = os.getenv("GOOGLE_EMBEDDING_MODEL", "models/embedding-001")
+GOOGLE_EMBEDDING_MODEL = os.getenv("GOOGLE_EMBEDDING_MODEL", "gemini-embedding-001")
 
 # HuggingFace configuration
 HUGGINGFACE_API_KEY = os.getenv("HUGGINGFACE_API_KEY")
@@ -41,6 +42,7 @@ EXPERIMENT_NAME = "rag_system_experiment"
 
 # Data location
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+DUCKDB_PATH = Path(os.getenv("DUCKDB_PATH"))
 
 # FastAPI configuration
 API_HOST = os.getenv("API_HOST", "localhost")
